@@ -19,6 +19,11 @@ public class OccurrenceType
         this.id = id;
         this.nome = name;
     }
+    
+    public OccurrenceType(long id)
+    {
+    	this.id = id;
+    }
 
     public OccurrenceType(){}
 

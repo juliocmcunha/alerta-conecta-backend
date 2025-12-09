@@ -1,5 +1,6 @@
 package net.devs404.alerta_conecta_backend.database.occurrence.microdata;
 
+@Deprecated
 public class OccurrenceAddress
 {
     private String rua;
@@ -10,6 +11,13 @@ public class OccurrenceAddress
 
 
     public OccurrenceAddress(){}
+    public OccurrenceAddress(String street, String number, String complement, int idHood)
+    {
+    	this.rua = street;
+    	this.numero = number;
+    	this.complemento = complement;
+    	this.idBairro = idHood;
+    }
 
     /// GETTERS&SETTERS
     public String getStreet() {return rua;}
