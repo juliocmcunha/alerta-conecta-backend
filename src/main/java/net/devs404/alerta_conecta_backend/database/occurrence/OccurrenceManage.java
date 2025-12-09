@@ -48,16 +48,15 @@ public class OccurrenceManage
             while(rs.next())
             {
             	
-                Occurrence newOccurrence = new Occurrence();
-                newOccurrence.setId(rs.getInt("id_ocorrencia"));
-                
-                newOccurrence.setTitle(rs.getString("titulo"));
-                newOccurrence.setTimestamp(rs.getTimestamp("data_hora"));
-                newOccurrence.setVictims(rs.getString("envolvidos"));
-                newOccurrence.setDetails(rs.getString("detalhes"));
-
+                Occurrence newOccurrence = new Occurrence(
+                		rs.getInt("id_ocorrencia"),
+                		rs.getString("titulo"),
+                		rs.getTimestamp("data_hora"),
+                		rs.getString("envolvidos"),
+                		rs.getString("detalhes"),
+                		Enum.valueOf(OccurrencePriority.class, rs.getString("prioridade"))
+                		);
                 newOccurrence.promoteStatus(Enum.valueOf(OccurrenceStatus.class, rs.getString("status_atual")));
-                newOccurrence.promotePriority(Enum.valueOf(OccurrencePriority.class, rs.getString("prioridade")));
 
                 newOccurrence.setType(new OccurrenceType(rs.getInt("id_tipo"), rs.getString("nome_tipo")));
                 newOccurrence.setLocation(new OccurrenceLocation(rs.getDouble("latitude"), rs.getDouble("longitude")));
@@ -76,12 +75,14 @@ public class OccurrenceManage
     	Occurrence occurrence = null;
     	String sql = """
                 SELECT\s
+                id_ocorrencia,
                 titulo,
                 data_hora,
                 envolvidos,
                 detalhes,
                 status_atual,
                 prioridade,
+                pasta_recursos,
                 t.id_tipo_ocorrencia as id_tipo,
                 t.nome_tipo,
                 e.latitude,
@@ -89,28 +90,32 @@ public class OccurrenceManage
                 FROM\s
                 ocorrencia o 
                 JOIN tipo_ocorrencia t ON o.id_tipo_ocorrencia = t.id_tipo_ocorrencia\s
-    			JOIN endereco_ocorrencia e ON o.id_endereco_ocorrencia = e.id_endereco_ocorrencia;
+    			JOIN endereco_ocorrencia e ON o.id_endereco_ocorrencia = e.id_endereco_ocorrencia\s
+    			WHERE id_ocorrencia=?;
                 """;
     	try
     	{
     		Connection connect = DataBase.connect();
     		PreparedStatement ps = connect.prepareStatement(sql);
+    		ps.setLong(1, id);
+    		
     		ResultSet rs = ps.executeQuery();
     		
     		while(rs.next())
     		{
-    			Occurrence newOccurrence = new Occurrence();
-    			newOccurrence.setTitle(rs.getString("titulo"));
-                newOccurrence.setTimestamp(rs.getTimestamp("data_hora"));
-                newOccurrence.setVictims(rs.getString("envolvidos"));
-                newOccurrence.setDetails(rs.getString("detalhes"));
+    			occurrence = new Occurrence(
+    					rs.getLong("id_ocorrencia"),
+    					rs.getString("titulo"),
+    					rs.getTimestamp("data_hora"),
+    					rs.getString("envolvidos"),
+    					rs.getString("detalhes"),
+    					Enum.valueOf(OccurrencePriority.class, rs.getString("prioridade"))
+    					);
+    			occurrence.promoteStatus(Enum.valueOf(OccurrenceStatus.class, rs.getString("status_atual")));
 
-                newOccurrence.promoteStatus(Enum.valueOf(OccurrenceStatus.class, rs.getString("status")));
-                newOccurrence.promotePriority(Enum.valueOf(OccurrencePriority.class, rs.getString("prioridade")));
-
-                newOccurrence.setType(new OccurrenceType(rs.getInt("id_tipo"), rs.getString("nome_tipo")));
-                
-                newOccurrence.setLocation(new OccurrenceLocation(rs.getDouble("latitude"), rs.getDouble("longitude")));
+    			occurrence.setFolderName(rs.getString("pasta_recursos"));
+    			occurrence.setType(new OccurrenceType(rs.getInt("id_tipo"), rs.getString("nome_tipo")));
+    			occurrence.setLocation(new OccurrenceLocation(rs.getDouble("latitude"), rs.getDouble("longitude")));
     		}
     	} catch (SQLException e) {
             throw new RuntimeException(e);

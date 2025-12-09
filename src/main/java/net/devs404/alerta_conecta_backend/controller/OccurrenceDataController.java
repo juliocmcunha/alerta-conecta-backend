@@ -9,6 +9,10 @@ import net.devs404.alerta_conecta_backend.database.occurrence.microdata.Occurren
 import net.devs404.alerta_conecta_backend.database.resources.ResourcesManage;
 import net.devs404.alerta_conecta_backend.util.TimestampPlus;
 
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -79,7 +83,8 @@ public class OccurrenceDataController
     	OccurrencePriority truePriority = OccurrencePriority.valueOf(priority);
     	Timestamp trueDate = Timestamp.from(Instant.parse(date));
     	
-    	Occurrence newOccurrence = new Occurrence(title, trueDate, victims, details, trueStatus, truePriority);
+    	Occurrence newOccurrence = new Occurrence(title, trueDate, victims, details, truePriority);
+    	newOccurrence.promoteStatus(trueStatus);
     	newOccurrence.setLocation(new OccurrenceLocation(Double.valueOf(latitude), Double.valueOf(longitude)));
     	newOccurrence.setType(new OccurrenceType(Integer.valueOf(type)));
     	
@@ -98,7 +103,6 @@ public class OccurrenceDataController
     public ResponseEntity<Map<String, Object>> getOccurrenceById(@PathVariable("id") long id) {
         try {
         	Occurrence occurrence = OccurrenceManage.getOccurrence(id);
-        	List<Path> imgPaths = ResourcesManage.getResources(occurrence.getFolderName());
         	
             Map<String, Object> mapOccurrence = new HashMap<>();
             mapOccurrence.put("title", occurrence.getTitle());
@@ -110,10 +114,9 @@ public class OccurrenceDataController
             mapOccurrence.put("latitude", occurrence.getLocation().getLatitude());
             mapOccurrence.put("longitude", occurrence.getLocation().getLongitude());
             mapOccurrence.put("occurrencetype", occurrence.getType().getId());
-            mapOccurrence.put("images", Arrays.asList(imgPaths));
             
-            System.out.println("Ocorrencia "+id+" resgatada com sucesso!");
-            return ResponseEntity.ok(mapOccurrence);
+            System.out.println("Ocorrencia ID:"+id+" resgatada com sucesso!");
+            return ResponseEntity.ok().body(mapOccurrence);
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -121,6 +124,33 @@ public class OccurrenceDataController
         }
     }
     
+    @GetMapping("/{occurrenceId}/images")
+    public ResponseEntity<Resource> getOccurrenceImage(@PathVariable("occurrenceId") long id)
+    {
+    	Occurrence occurrence = OccurrenceManage.getOccurrence(id);
+    	
+    	List<Path> imgPaths = ResourcesManage.getResources(occurrence.getFolderName());
+        
+    	Resource resource = null;
+    	try {
+    		resource = new UrlResource(imgPaths.get(0).toUri());
+    	}catch(Exception ex) {System.out.println("Erro ao tentar transformar imagem em recurso!");}
+    	
+    	String filename = "";
+    	try {
+    		filename = imgPaths.get(0).getFileName().toString();
+    	}catch(Exception ex) {System.out.println("Ocorrencia sem recursos graficos!");}
+        String contentType = ResourcesManage.determineImageType(filename);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(contentType));
+        headers.setContentDisposition(ContentDisposition.inline()
+                .filename(filename)
+                .build());
+        
+        System.out.println("Recurso da Ocorrencia ID:" + occurrence.getId() + " resgatado com sucesso!");
+        return ResponseEntity.ok().headers(headers).body(resource);
+    }
 
     @PatchMapping(value = "/{id}")
     public ResponseEntity<Map<String, Object>> partialUpdateOccurrence(
@@ -132,14 +162,13 @@ public class OccurrenceDataController
     		@RequestPart("priority") String priority) 
     {
     	try {
-            
-            
-            Occurrence occurrence = new Occurrence();
-            occurrence.setTitle(title);
-            occurrence.setVictims(victims);
-            occurrence.setDetails(details);
+            Occurrence occurrence = new Occurrence(
+            			title,
+            			victims,
+            			details,
+            			priority
+            		);
             occurrence.setStatus(status);
-            occurrence.setPriority(priority);
 
             boolean isUpdated = OccurrenceManage.updateOccurrence(id, occurrence);
             if (!isUpdated) {

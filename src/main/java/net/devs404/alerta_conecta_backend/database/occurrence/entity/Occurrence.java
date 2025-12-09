@@ -28,16 +28,39 @@ public class Occurrence
     private OccurrenceType tipo;
     private OccurrenceLocation local;
 
-    public Occurrence(){}
     
-    public Occurrence(String title, Timestamp date, String victims, String details, OccurrenceStatus status, OccurrencePriority priority)
+    public Occurrence(String title, String victims, String details, String priority)
+    {
+    	this.titulo = title;
+    	this.envolvidos = victims;
+    	this.detalhe = details;
+    	
+    	Enum.valueOf(OccurrencePriority.class, priority);
+    	
+    	this.status = OccurrenceStatus.Em_andamento;
+    }
+    
+    public Occurrence(String title, Timestamp date, String victims, String details, OccurrencePriority priority)
     {
     	this.titulo = title;
     	this.data = date;
     	this.envolvidos = victims;
     	this.detalhe = details;
-    	this.status = status;
     	this.prioridade = priority;
+    	
+    	this.status = OccurrenceStatus.Em_andamento;
+    }
+    
+    public Occurrence(long id, String title, Timestamp date, String victims, String details, OccurrencePriority priority)
+    {
+    	this.id = id;
+    	this.titulo = title;
+    	this.data = date;
+    	this.envolvidos = victims;
+    	this.detalhe = details;
+    	this.prioridade = priority;
+    	
+    	this.status = OccurrenceStatus.Em_andamento;
     }
 
     public void promoteStatus(OccurrenceStatus newStatus)
@@ -65,13 +88,8 @@ public class Occurrence
     public OccurrenceLocation getLocation() {return local;}
     
 
-    public void setId(long newId){id = newId;}
-    public void setTitle(String newTitle){titulo = newTitle;}
-    public void setTimestamp(Timestamp newDate){data = newDate;}
-    public void setVictims(String newListVict){envolvidos = newListVict;}
-    public void setDetails(String newDetails){detalhe = newDetails;}
-    public void setFolderName(String newFolderName){nomePasta = newFolderName;}
-
+    public void setFolderName(String newName){nomePasta = newName;}
+    
     public void setType(OccurrenceType newType){tipo = newType;}
     public void setLocation(OccurrenceLocation newLocation) {local = newLocation;} 
     
